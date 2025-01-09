@@ -1,0 +1,81 @@
+replicaCount: 2
+name: dns
+image:
+  image: internetsystemsconsortium/bind9
+  pullPolicy: IfNotPresent
+  tag: 9.18
+
+imageConfig:
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 53
+  targetPort: 5053
+  labels:
+  loadBalancerIP: "1.2.3.40"
+  annotations:
+    loadbalancer.openstack.org/class: internet
+    loadbalancer.openstack.org/keep-floatingip: "true"
+
+
+# resources:
+#   requests:
+#     memory: 1Gi
+#     cpu: 300m
+
+readinessProbe:
+  enabled: true
+livenessProbe:
+  enabled: true
+
+bindzones:
+  example.com: |
+      $TTL    604800
+      @       IN      SOA     ns1.example.com. admin.example.com. (
+                                    5         ; Serial
+                               604800         ; Refresh
+                                86400         ; Retry
+                              2419200         ; Expire
+                               604800 )       ; Negative Cache TTL
+      ;
+      example.com.       IN      NS      ns1.example.com.
+      ns1                      IN      A       1.2.3.40
+      rke00                IN      A       10.24.0.99
+      rke01                IN      A       10.24.0.100
+      rke-lb               IN      A       100.69.29.9
+
+bindconfig:
+  named.conf: |
+    acl allowed_hosts { 
+        1.2.3.4/32;
+        1.3.4.3/32;
+        3.2.3.190/32;
+    };
+
+    options {
+            directory "/var/cache/bind";
+            listen-on port 5053 { any; };
+            auth-nxdomain no;    # conform to RFC1035
+            forwarders {      };
+            listen-on-v6 { ::1; };
+            allow-recursion {
+                    cf_eu12;
+            };
+            allow-transfer {
+                    none;
+            };
+            allow-update {
+                    none;
+            };
+    };
+
+    zone "example.com" {
+      type master;
+      file "/var/lib/bind/example.com";
+    };
+
+zoneconfigs:
+  items:                 
+  - key: example.com
+    path: example.com
