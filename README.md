@@ -1,5 +1,7 @@
 # Authorative Bind9 Nameserver Helm Chart
 
+This is a helm chart for running a Bind Nameserver on a Kubernetes Cluster
+
 ## Installation
 
 Copy the Repo
